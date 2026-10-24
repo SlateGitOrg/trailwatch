@@ -57,7 +57,7 @@ class SimConfig:
     days: int = 90
     start: str = "2026-01-05"  # a Monday
     incidents_per_scenario: int = 2
-    incident_start_day: int = 21
+    incident_start_day: int | None = None  # default: day 21, or a third in for short runs
     scenarios: tuple[str, ...] = tuple(SCENARIOS)
 
     def __post_init__(self) -> None:
@@ -65,11 +65,17 @@ class SimConfig:
             raise SimulationError("days must be >= 2")
         if self.incidents_per_scenario < 0:
             raise SimulationError("incidents_per_scenario must be >= 0")
-        if self.incidents_per_scenario and not 0 <= self.incident_start_day < self.days - 1:
+        if self.incidents_per_scenario and not 0 <= self.first_incident_day <= self.days - 2:
             raise SimulationError("incident_start_day must fall inside the simulated period")
         unknown = sorted(set(self.scenarios) - set(SCENARIOS))
         if unknown:
             raise SimulationError(f"unknown scenario(s): {', '.join(unknown)}")
+
+    @property
+    def first_incident_day(self) -> int:
+        if self.incident_start_day is not None:
+            return self.incident_start_day
+        return min(21, self.days // 3)
 
     @property
     def start_epoch(self) -> float:
@@ -141,7 +147,7 @@ def build_population(rng: random.Random, days: int) -> list[Persona]:
                 regions=US,
                 cli_family="boto3",
                 extra_family="terraform",
-                extra_family_from=rng.randint(30, days),
+                extra_family_from=rng.randint(days // 3, days),
             ),
         ),
         Human(
@@ -182,7 +188,7 @@ def build_population(rng: random.Random, days: int) -> list[Persona]:
                 apis=cat.DEV_APIS,
                 regions=IN,
                 extra_family="boto3",
-                extra_family_from=rng.randint(30, days),
+                extra_family_from=rng.randint(days // 3, days),
             ),
         ),
         Human(
@@ -310,7 +316,7 @@ class Simulation:
             for _ in range(cfg.incidents_per_scenario):
                 for _attempt in range(50):
                     victim = rng.choice(victims)
-                    day = rng.randint(cfg.incident_start_day, cfg.days - 2)
+                    day = rng.randint(cfg.first_incident_day, cfg.days - 2)
                     if (victim.principal.name, day) not in taken:
                         break
                 taken.add((victim.principal.name, day))

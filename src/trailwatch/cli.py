@@ -289,7 +289,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--start", default="2026-01-05", help="first simulated day (UTC date)")
     p.add_argument("--format", choices=["jsonl", "cloudtrail"], default="jsonl")
     p.add_argument("--incidents-per-scenario", type=int, default=2)
-    p.add_argument("--incident-start-day", type=int, default=21)
+    p.add_argument(
+        "--incident-start-day", type=int, help="first day incidents may occur (default: 21)"
+    )
     p.add_argument("--scenario", action="append", choices=sorted(SCENARIOS))
     p.add_argument("--max-delay", type=float, default=300.0, help="max delivery delay (s)")
     p.set_defaults(func=cmd_simulate)
