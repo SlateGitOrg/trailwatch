@@ -15,6 +15,7 @@ import heapq
 import io
 import json
 import logging
+import re
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
@@ -27,6 +28,7 @@ from trailwatch.window import BoundedLRU
 log = logging.getLogger(__name__)
 
 JSON_SUFFIXES = (".json", ".jsonl", ".ndjson")
+_STAMP = re.compile(r"_CloudTrail_[a-z0-9-]+_(\d{8}T\d{4}Z)_")
 
 
 @dataclass(slots=True)
@@ -95,16 +97,31 @@ def iter_file(path: Path, stats: IngestStats) -> Iterator[Any]:
             yield from iter_stream(handle, stats, str(path))
 
 
+def delivery_sort_key(path: Path) -> tuple[str, str]:
+    """Sort key putting CloudTrail log files in delivery-time order across regions.
+
+    CloudTrail names files ``<acct>_CloudTrail_<region>_<YYYYMMDDTHHMMZ>_<id>.json.gz`` under
+    per-region prefixes, so a plain path sort would replay one region's whole history before
+    the next region's; ordering by the embedded timestamp interleaves regions correctly.
+    Other files sort by name.
+    """
+    match = _STAMP.search(path.name)
+    return (match.group(1) if match else "", str(path))
+
+
 def discover(paths: Iterable[Path]) -> list[Path]:
-    """Expand directories (recursively) into sorted lists of JSON/JSONL(.gz) files."""
+    """Expand directories (recursively) into JSON/JSONL(.gz) files in delivery order."""
     found: list[Path] = []
     for path in paths:
         if path.is_dir():
             found.extend(
                 sorted(
-                    p
-                    for p in path.rglob("*")
-                    if p.is_file() and _logical_suffix(p) in JSON_SUFFIXES
+                    (
+                        p
+                        for p in path.rglob("*")
+                        if p.is_file() and _logical_suffix(p) in JSON_SUFFIXES
+                    ),
+                    key=delivery_sort_key,
                 )
             )
         elif path.exists():
