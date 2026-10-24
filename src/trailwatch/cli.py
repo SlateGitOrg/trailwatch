@@ -162,7 +162,7 @@ def _print_summary(title: str, summary: EvalSummary) -> None:
     print()
     print(scenario_table(summary))
     print(f"\nfalse alerts by rule: {summary.false_alerts_by_rule}")
-    print(f"events/s: {summary.events_per_second}")
+    print(f"end-to-end events/s (simulate + deliver + detect): {summary.events_per_second}")
 
 
 def cmd_eval(args: argparse.Namespace) -> int:

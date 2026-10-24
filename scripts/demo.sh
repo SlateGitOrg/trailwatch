@@ -12,7 +12,7 @@ echo
 echo "== 2. Detect (streaming, reorder buffer, baselines, rules, risk scoring, dedup)"
 uv run trailwatch detect "$OUT/data/AWSLogs" --out "$OUT/alerts.jsonl" \
   --state-out "$OUT/baseline.json" --stats 2> "$OUT/stats.json"
-python3 -c "import json,sys; s=json.load(open(sys.argv[1])); print(json.dumps({k: s[k] for k in ('ingest','dedup','alerts_written')}, indent=1))" "$OUT/stats.json"
+uv run python -c "import json,sys; s=json.load(open(sys.argv[1])); print(json.dumps({k: s[k] for k in ('ingest','dedup','alerts_written')}, indent=1))" "$OUT/stats.json"
 
 echo
 echo "== 3. Alerts (TP = cites an injected incident event; FP = benign activity)"
@@ -24,7 +24,7 @@ uv run trailwatch score --alerts "$OUT/alerts.jsonl" --dataset "$OUT/data"
 
 echo
 echo "== 5. The first impossible-travel alert in full (JSON format)"
-grep -m 1 '"rule_id":"impossible_travel"' "$OUT/alerts.jsonl" | python3 -m json.tool
+grep -m 1 '"rule_id":"impossible_travel"' "$OUT/alerts.jsonl" | uv run python -m json.tool
 
 echo
 echo "== 6. Hand-authored CloudTrail fixture (phished no-MFA console user -> backdoor -> StopLogging)"
