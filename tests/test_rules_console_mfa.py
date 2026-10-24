@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from conftest import CONSOLE_UA, T0, Harness, console_login, event, user_identity
-
 from trailwatch.baseline import Dim
 from trailwatch.model import Event, Finding, Severity
 from trailwatch.parse import parse_record
@@ -105,4 +104,6 @@ def test_routine_no_mfa_login_is_silent_and_familiar_change_downgraded() -> None
     assert [f.severity for f in findings] == [Severity.HIGH]
     profile = h.baseline.get(console_login().principal)
     assert profile is not None
-    assert profile.weight(Dim.HABIT, HABIT_NO_MFA_LOGIN, T0) >= h.config.baseline.familiar_min_weight
+    assert (
+        profile.weight(Dim.HABIT, HABIT_NO_MFA_LOGIN, T0) >= h.config.baseline.familiar_min_weight
+    )

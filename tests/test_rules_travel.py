@@ -14,7 +14,6 @@ from conftest import (
     event,
     user_identity,
 )
-
 from trailwatch.config import Config
 from trailwatch.model import Finding, Severity
 from trailwatch.rules import ImpossibleTravelRule

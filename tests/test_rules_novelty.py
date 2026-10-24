@@ -13,7 +13,6 @@ from conftest import (
     event,
     user_identity,
 )
-
 from trailwatch.config import Config
 from trailwatch.model import Severity
 from trailwatch.rules import NoveltyRule
@@ -32,7 +31,9 @@ def test_cold_principal_produces_no_novelty(harness: Harness) -> None:
 
 
 def test_offensive_distribution_is_high_even_when_cold(harness: Harness) -> None:
-    assert titles(harness, ua=KALI_UA) == {"Call from a penetration-testing distribution": Severity.HIGH}
+    assert titles(harness, ua=KALI_UA) == {
+        "Call from a penetration-testing distribution": Severity.HIGH
+    }
 
 
 def test_new_country_from_hosting_is_bumped() -> None:
@@ -72,7 +73,9 @@ def test_sensitive_and_rare_apis() -> None:
     h = Harness()
     h.warm()
     sensitive = titles(h, name="GetSecretValue", source="secretsmanager", t=T0 + 1)
-    assert sensitive == {"First use of sensitive API secretsmanager:GetSecretValue": Severity.MEDIUM}
+    assert sensitive == {
+        "First use of sensitive API secretsmanager:GetSecretValue": Severity.MEDIUM
+    }
     rare = titles(h, name="ListHostedZones", source="route53", t=T0 + 1)
     assert rare == {"First use of rare API route53:ListHostedZones": Severity.LOW}
 

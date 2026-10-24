@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from conftest import CONSOLE_UA, HOSTILE_AMS_IP, T0, Harness, event, user_identity
-
 from trailwatch.baseline import Dim
 from trailwatch.config import Config
 from trailwatch.model import Event, Finding, Severity
@@ -63,7 +62,9 @@ def test_root_key_creation_is_critical(harness: Harness) -> None:
 
 def test_role_creating_key_for_user_counts_as_other(harness: Harness) -> None:
     rule = AccessKeyCreationRule(harness.config)
-    findings = feed(harness, rule, create_key("admin-01", caller="terraform-ci", kind="AssumedRole"))
+    findings = feed(
+        harness, rule, create_key("admin-01", caller="terraform-ci", kind="AssumedRole")
+    )
     assert [f.severity for f in findings] == [Severity.HIGH]
 
 
@@ -81,9 +82,7 @@ def test_routine_key_creation_is_downgraded_two_levels(harness: Harness) -> None
 
 def test_onboarding_pattern_downgrades_one_level(harness: Harness) -> None:
     rule = AccessKeyCreationRule(harness.config)
-    created = event(
-        "CreateUser", "iam", t=T0, params={"userName": "carol"}, read_only=False
-    )
+    created = event("CreateUser", "iam", t=T0, params={"userName": "carol"}, read_only=False)
     assert feed(harness, rule, created) == []
     findings = feed(harness, rule, create_key("carol", t=T0 + 120))
     assert [f.severity for f in findings] == [Severity.MEDIUM]

@@ -102,7 +102,9 @@ def raw(
         "requestParameters": params,
         "responseElements": response,
         "eventID": f"evt-{next(_ids):06d}",
-        "readOnly": read_only if read_only is not None else name.startswith(("Describe", "List", "Get")),
+        "readOnly": read_only
+        if read_only is not None
+        else name.startswith(("Describe", "List", "Get")),
         "eventType": "AwsApiCall",
         "recipientAccountId": ACCOUNT,
     }

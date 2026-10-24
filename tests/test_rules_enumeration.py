@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from conftest import BOTO_UA, HOSTILE_AMS_IP, T0, Harness, event, user_identity
-
 from trailwatch.config import Config
 from trailwatch.model import Event, Finding, Severity
 from trailwatch.rules import EnumerationBurstRule

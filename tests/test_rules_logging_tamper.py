@@ -5,15 +5,18 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from conftest import Harness, event
 
+from conftest import Harness, event
 from trailwatch.config import Config
 from trailwatch.model import Severity
 from trailwatch.rules import LoggingTamperRule
 
 
 def check(
-    name: str, source: str, params: dict[str, Any] | None = None, config: Config | None = None,
+    name: str,
+    source: str,
+    params: dict[str, Any] | None = None,
+    config: Config | None = None,
     error: str | None = None,
 ) -> list[tuple[Severity, str]]:
     h = Harness(config)
