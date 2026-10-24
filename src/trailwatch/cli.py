@@ -69,7 +69,12 @@ def _add_config_args(parser: argparse.ArgumentParser) -> None:
 
 def _raw_records(inputs: Sequence[str], stats: IngestStats) -> Iterator[Any]:
     if list(inputs) == ["-"]:
-        yield from iter_stream(sys.stdin, stats, "<stdin>")
+        try:
+            yield from iter_stream(sys.stdin, stats, "<stdin>")
+        except UnicodeDecodeError as exc:
+            # Stop reading, but still drain the reorder buffer and write state for what was read.
+            stats.bad_files += 1
+            log.error("<stdin>: stopping at undecodable input: %s", exc)
         return
     for path in discover(Path(p) for p in inputs):
         yield from iter_file(path, stats)

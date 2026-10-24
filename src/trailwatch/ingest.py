@@ -16,6 +16,7 @@ import io
 import json
 import logging
 import re
+import zlib
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
@@ -40,6 +41,7 @@ class IngestStats:
     late: int = 0
     forced: int = 0
     files: int = 0
+    bad_files: int = 0
 
 
 def _records_from_value(value: Any) -> Iterator[Any]:
@@ -79,9 +81,18 @@ def _logical_suffix(path: Path) -> str:
     return Path(path.stem).suffix if path.suffix == ".gz" else path.suffix
 
 
-def iter_file(path: Path, stats: IngestStats) -> Iterator[Any]:
-    """Yield raw records from one file: CloudTrail ``.json`` (optionally gzipped) or JSONL."""
-    stats.files += 1
+#: File-level failures that make the rest of one input unreadable: missing/unreadable files and
+#: corrupt gzip (``OSError``, which includes ``gzip.BadGzipFile``), truncated gzip (``EOFError``),
+#: corrupt deflate data (``zlib.error``) and non-UTF-8 bytes (``UnicodeDecodeError``).
+UNREADABLE_INPUT_ERRORS: tuple[type[Exception], ...] = (
+    OSError,
+    EOFError,
+    zlib.error,
+    UnicodeDecodeError,
+)
+
+
+def _iter_file_unguarded(path: Path, stats: IngestStats) -> Iterator[Any]:
     with _open_text(path) as handle:
         if _logical_suffix(path) == ".json":
             try:
@@ -95,6 +106,22 @@ def iter_file(path: Path, stats: IngestStats) -> Iterator[Any]:
             yield from _records_from_value(value)
         else:
             yield from iter_stream(handle, stats, str(path))
+
+
+def iter_file(path: Path, stats: IngestStats) -> Iterator[Any]:
+    """Yield raw records from one file: CloudTrail ``.json`` (optionally gzipped) or JSONL.
+
+    A file that cannot be read to the end (corrupt or truncated gzip, non-UTF-8 bytes, I/O
+    error) is counted in ``stats.bad_files``, logged and abandoned, so one bad file in a synced
+    CloudTrail tree never stops the run. Records already yielded from it before the failure are
+    kept; the unread remainder of that file is lost.
+    """
+    stats.files += 1
+    try:
+        yield from _iter_file_unguarded(path, stats)
+    except UNREADABLE_INPUT_ERRORS as exc:
+        stats.bad_files += 1
+        log.error("%s: skipping unreadable file: %s: %s", path, type(exc).__name__, exc)
 
 
 def delivery_sort_key(path: Path) -> tuple[str, str]:

@@ -419,6 +419,42 @@ def test_file_formats(tmp_path: Path) -> None:
     assert discover([tmp_path / "list.json"]) == [tmp_path / "list.json"]
 
 
+def test_unreadable_files_are_counted_and_skipped(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    good = tmp_path / "good.jsonl"
+    good.write_text(json.dumps(raw()) + "\n")
+    not_gzip = tmp_path / "1_CloudTrail_us-east-1_20260302T1200Z_bad.json.gz"
+    not_gzip.write_bytes(b"this is not gzip data")
+    payload = gzip.compress(json.dumps({"Records": [raw(), raw()]}).encode())
+    truncated = tmp_path / "truncated.json.gz"
+    truncated.write_bytes(payload[: len(payload) // 2])
+    corrupt = tmp_path / "corrupt.json.gz"
+    corrupt.write_bytes(payload[:10] + bytes(b ^ 0xFF for b in payload[10:-8]) + payload[-8:])
+    latin1 = tmp_path / "latin1.jsonl"
+    latin1.write_bytes(b'{"eventName": "caf\xe9"}\n')
+    # One readable record, then a non-UTF-8 tail: the record read before the failure is kept.
+    tail = tmp_path / "tail.jsonl"
+    tail.write_bytes("".join(json.dumps(raw()) + "\n" for _ in range(3000)).encode())
+    with tail.open("ab") as handle:
+        handle.write(b"\xff\xfe\n")
+    stats = IngestStats()
+    with caplog.at_level("ERROR", logger="trailwatch.ingest"):
+        got = {
+            f.name: len(list(iter_file(f, stats)))
+            for f in [not_gzip, truncated, corrupt, latin1, good, tail]
+        }
+    assert stats.files == 6
+    assert stats.bad_files == 5
+    assert got["good.jsonl"] == 1
+    assert got[not_gzip.name] == got["latin1.jsonl"] == 0
+    assert 0 < got["tail.jsonl"] < 3000
+    assert caplog.text.count("skipping unreadable file") == 5
+    assert "BadGzipFile" in caplog.text
+    assert "EOFError" in caplog.text
+    assert "UnicodeDecodeError" in caplog.text
+
+
 def test_delivery_sort_key_interleaves_regions() -> None:
     a = Path(
         "AWSLogs/1/CloudTrail/us-west-2/2026/03/02/1_CloudTrail_us-west-2_20260302T0900Z_a.json.gz"
