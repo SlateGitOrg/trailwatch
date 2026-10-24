@@ -33,6 +33,7 @@ class _Burst:
     denied: TimeWindow[str]
     recent_ids: deque[str] = field(default_factory=lambda: deque(maxlen=20))
     last_fired: float = float("-inf")
+    last_severity: Severity = Severity.INFO
 
 
 class EnumerationBurstRule(Rule):
@@ -41,7 +42,7 @@ class EnumerationBurstRule(Rule):
         "Within enumeration.window_minutes: >= min_distinct_apis distinct discovery APIs across "
         ">= min_services services, or >= min_denied access-denied errors. Volume-only bursts "
         "are suppressed when they do not exceed peak_margin x the principal's historical daily "
-        "peak (scanners and auditors); fires at most once per window per principal."
+        "peak (scanners and auditors); fires once per window per principal unless severity rises."
     )
     techniques = ("T1580", "T1526", "T1087.004")
 
@@ -91,21 +92,22 @@ class EnumerationBurstRule(Rule):
         denial_storm = denials >= cfg.min_denied
         if not (volume or denial_storm):
             return []
-        if ctx.now - burst.last_fired < cfg.window_minutes * 60:
-            return []
         if (
             not denial_storm
             and self.config.baseline.suppress_familiar
             and distinct <= historical_peak * cfg.peak_margin
         ):
             return []
-        burst.last_fired = ctx.now
         if denial_storm and volume:
             severity = Severity.HIGH
         elif denial_storm:
             severity = Severity.MEDIUM if ctx.warmed_up else Severity.LOW
         else:
             severity = Severity.HIGH if ctx.warmed_up else Severity.MEDIUM
+        in_window = ctx.now - burst.last_fired < cfg.window_minutes * 60
+        if in_window and severity <= burst.last_severity:
+            return []
+        burst.last_fired, burst.last_severity = ctx.now, severity
         return [
             self.finding(
                 ctx,
