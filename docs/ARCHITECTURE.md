@@ -10,7 +10,7 @@ their time and space complexity. Notation: *N* = events processed, *P* = distinc
 |---|---|
 | `model.py` | immutable `Event`, `Identity`, `Finding`; mutable `Alert` (for dedup folding); `Severity` |
 | `parse.py` | raw CloudTrail dict -> `Event`; principal-key derivation; console sign-in helpers |
-| `ingest.py` | file/dir/stdin readers, `parse_records` (malformed + duplicate handling), `ReorderBuffer` |
+| `ingest.py` | file/dir/stdin readers (per-file guard: unreadable files counted as `bad_files` and skipped), `parse_records` (malformed + duplicate handling), `ReorderBuffer` |
 | `netmap.py` | IP -> `NetInfo` (ASN, org, kind, country, city, lat/lon), haversine distance |
 | `useragent.py` | raw user agent -> stable family |
 | `window.py` | `BoundedLRU`, `TimeWindow`, `DecayedCounter` |

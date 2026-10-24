@@ -33,7 +33,9 @@ honestly; and reviewers looking at how a streaming detector bounds its memory.
 
 - **Streaming ingest** of CloudTrail log files (`{"Records": [...]}`, gzipped or not), JSON
   lines, whole directories (ordered by the delivery timestamp in CloudTrail file names) or stdin;
-  malformed records and duplicate `eventID`s are counted and skipped; a bounded **reorder
+  malformed records and duplicate `eventID`s are counted and skipped; unreadable files (corrupt
+  or truncated gzip, non-UTF-8 bytes, I/O errors) are logged, counted as `bad_files` and skipped
+  without stopping the run; a bounded **reorder
   buffer** (watermark = max event time - 15 min) restores time order.
 - **Per-principal baselines** with exponential decay (30-day half-life): APIs, regions,
   user-agent *families*, ASNs, countries and derived habits, plus account-wide API popularity.
