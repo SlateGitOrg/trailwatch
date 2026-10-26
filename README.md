@@ -37,8 +37,8 @@ honestly and how a streaming detector bounds its memory.
   lines, whole directories (ordered by the delivery timestamp in CloudTrail file names) or stdin;
   malformed records and duplicate `eventID`s are counted and skipped; unreadable files (corrupt
   or truncated gzip, non-UTF-8 bytes, I/O errors) are logged, counted as `bad_files` and skipped
-  without stopping the run; a bounded **reorder
-  buffer** (watermark = max event time - 15 min) restores time order.
+  without stopping the run; a bounded **reorder buffer** (watermark = max event time - 15 min)
+  restores time order.
 - **Per-principal baselines** with exponential decay (30-day half-life): APIs, regions,
   user-agent *families*, ASNs, countries and derived habits, plus account-wide API popularity.
   Principals are keyed sensibly (IAM user ARN, role ARN, per-person SSO session, root).
@@ -252,7 +252,7 @@ flat, which is the point of the bounded design. `make eval` prints a lower "end-
 because it includes simulation and delivery reordering.
 
 Quality gate numbers: `make check` -> 189 tests, line+branch coverage 98.7% (threshold 90%);
-`make loc` -> 5,159 lines in `src/` (including docstrings), 2,089 in `tests/`.
+`make loc` -> 5,191 lines in `src/` (including docstrings), 2,160 in `tests/`.
 
 ## Design decisions (summary)
 
