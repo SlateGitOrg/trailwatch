@@ -3,7 +3,7 @@
 ## Scope and purpose
 
 trailwatch is a **defensive** detector for AWS identity misuse visible in CloudTrail management
-events. It is a lab/portfolio project: it reads logs, it never calls AWS APIs, never changes
+events. It is a research tool: it reads logs, it never calls AWS APIs, never changes
 anything in an account, and all bundled data is synthetic. The simulator produces log records
 describing attacks; it contains no exploit code and interacts with no system.
 

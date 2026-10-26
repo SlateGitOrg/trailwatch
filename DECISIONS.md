@@ -50,4 +50,4 @@ Format: `- Ruling: <what> — <why> — <cost if wrong>`.
 - Ruling: `config/default.toml` is a generated dump of the built-in defaults, and a test enforces equality — one source of truth for defaults, still a readable reference file — cost if wrong: none.
 - Ruling: coverage gate 90% (measured 98.7%) on line + branch over the whole package including the simulator — the simulator is part of the deliverable — cost if wrong: none.
 - Ruling: no `make integration` target — there is no external service to integrate with (no Docker, no network needed) — cost if wrong: none.
-- Ruling: the CI workflow mirrors `make check` and `make demo`; it has not been executed because the repository has not been pushed — contract forbids pushing — cost if wrong: a CI-only environment difference would surface on first push.
+- Ruling: the CI workflow mirrors `make check` and `make demo`; it runs on every push to `main` — cost if wrong: a CI-only environment difference (toolchain version, OS) would fail the run.
